@@ -64,4 +64,4 @@ def event(data):
 
 ## Экзамплы по этой части туториала
 
-* [easy-bot](https://github.com/Zakovskiy/lwaf.py/tree/master/examples/easy_bot.py)
+* [easy-bot](https://github.com/Zakovskiy/lwaf.py/tree/main/examples/easy_bot.py)
