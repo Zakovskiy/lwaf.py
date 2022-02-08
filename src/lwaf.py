@@ -293,7 +293,3 @@ class Client:
                 else:
                     continue
         return handler
-
-if __name__ == "__main__":
-
-    lwaf = Client("Team LWAF", "4719zx")
