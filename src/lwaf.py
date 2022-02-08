@@ -17,6 +17,7 @@ class Client:
 
         self.data = []
 
+        self.alive = False
         self.create_connection()
 
         if nickname and password: self.login_by_nickname(nickname, password)
@@ -250,13 +251,14 @@ class Client:
         return self.listen()
 
     def create_connection(self):
+        self.alive = True
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.address, self.port))
         threading.Thread(target=self._listener).start()
 
     def _listener(self):
         buffer = bytes()
-        while True:
+        while self.alive:
             r = self.client_socket.recv(2048)
             read = len(r)
             if read != 0:
@@ -270,7 +272,7 @@ class Client:
                 else:
                     buffer = buffer + r
             else:
-                return
+                self.alive = False
 
     def send_data(self, content:list):
         self.client_socket.sendall((json.dumps(content)+"\n").encode("utf-8"))
@@ -281,3 +283,17 @@ class Client:
         res = self.data[0]
         del self.data[0]
         return json.loads(res)
+
+    def event(self, type: str = None):
+        def handler(function):
+            while self.alive:
+                recv = self.listen()
+                if recv.get("te") == type or not type:
+                    function(recv)
+                else:
+                    continue
+        return handler
+
+if __name__ == "__main__":
+
+    lwaf = Client("Team LWAF", "4719zx")
