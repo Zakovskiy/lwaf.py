@@ -12,6 +12,7 @@ import lwaf
 
 LWAF = lwaf.Client("nickname", "password");
 ```
+### [Documentations](https://github.com/Zakovskiy/lwaf.py/tree/master/docs/README.md)
 
 ### [Telegram](https://t.me/zakovskiy)
 
