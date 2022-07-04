@@ -4,6 +4,7 @@ import threading
 from .utils import md5hash, objects
 from .abc_socket import SocketHandler
 
+
 class Client(SocketHandler):
     def __init__(self, device_id: str = "libraryzakovskiy", version: str = "3.0") -> None:
         self.version: str = version
