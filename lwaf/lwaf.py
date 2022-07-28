@@ -1,17 +1,17 @@
-import socket
 import json
-import threading
+import requests
 from .utils import md5hash, objects
 from .abc_socket import SocketHandler
 
+
 class Client(SocketHandler):
-    def __init__(self, device_id: str = "libraryzakovskiy", version: str = "3.0") -> None:
+    def __init__(self, device_id: str = "libraryzakovskiy", version: str = "4.0") -> None:
         self.version: str = version
 
         self.device_id: str = device_id
         self.access_token: str = None
         self.user_id: str = None
-
+        self.webApi = "http://185.188.183.144:5000/api/lwaf/"
         self.md5: md5hash.Client = md5hash.Client()
 
         SocketHandler.__init__(self, self)
@@ -73,76 +73,44 @@ class Client(SocketHandler):
                 0 - мужской
                 1 - женский
         """
-        data = {
-            "te": "sc",
-            "st": sex_type
-        }
-        self.send_data(data)
-        return self.get_data("sc")
+        response = requests.get(f"{self.webApi}user/changeSex?token={self.access_token}&type={type}").json()
+        return response
 
-    def get_user(self, content: str, user_type: str = "n") -> objects.User:
-        """
-        **Параметры**
-            - user_type : 
-                n - получение информации по никнейму
-                uid - получение информации по user_id
-            - content : никнейм или user_id (в зависимости от user_type)
-        """
-        data = {
-            "te": "gu",
-            "ut": user_type,
-            "c": content
-        }
-        self.send_data(data)
-        response = self.get_data("gu")
-        if not response.get("e"):
-            return objects.User(response["u"])
+    def get_user(self, user_id: str) -> objects.User:
+        response = requests.get(f"{self.webApi}user/get?token={self.access_token}&userId={user_id}").json()
+        if response["success"]:
+            return objects.User(response["user"])
         raise Exception(response)
 
-    def friend_list(self, user_id: str) -> objects.FriendList:
-        data = {
-            "te": "fli",
-            "uid": user_id
-        }
-        self.send_data(data)
-        response = self.listen()
-        if not response.get("e"):
-            return objects.FriendList(response["fli"])
+    def friends_list(self, user_id: str) -> objects.FriendsList:
+        response = requests.get(f"{self.webApi}friends/{user_id}/list?token={self.access_token}").json()
+        if response["success"]:
+            return objects.FriendsList(response["friends"])
         raise Exception(response)
 
-    def private_conversation_join(self, friend_id: str) -> dict:
-        data = {
-            "te": "pcj",
-            "fid": friend_id
-        }
-        self.send_data(data)
-        return self.get_data("pcj")
+    def friends_accept(self, friend_id: str) -> dict:
+        response = requests.get(f"{self.webApi}friends/{friend_id}/accept?token={self.access_token}").json()
+        return response
 
-    def private_conversation_get_messages(self, friend_id: str) -> dict:
-        data = {
-            "te": "pcgm",
-            "fid": friend_id
-        }
-        self.send_data(data)
-        return self.get_data("pcgm")
+    def friends_add(self, user_id: str) -> dict:
+        response = requests.get(f"{self.webApi}friends/add?token={self.access_token}&userId={user_id}").json()
+        return response
 
-    def private_conversation_send_message(self, friend_id: str, message: str, reply_message_id: str = "") -> None:
-        data = {
-            "te": "pcsm",
-            "fid": friend_id,
-            "m": message,
-            "rmid": reply_message_id
-        }
-        self.send_data(data)
+    def friends_delete(self, friend_id: str) -> dict:
+        response = requests.get(f"{self.webApi}friends/{friend_id}/delete?token={self.access_token}").json()
+        return response
+
+    def private_conversation_get_messages(self, friend_id: str, offset: int = 0, limit: int = 100) -> dict:
+        response = requests.get(f"{self.webApi}privateConversation/{friend_id}/?token={self.access_token}&offset={offset}&limit={limit}").json()
+        return response
+
+    def private_conversation_send_message(self, friend_id: str, content: str, reply_message_id: str = "") -> None:
+        response = requests.get(f"{self.webApi}privateConversation/{friend_id}/sendMessage?token={self.access_token}&content={content}&replyMessageId={reply_message_id}").json()
+        return response
 
     def private_conversation_delete_message(self, friend_id: str, message_id: str) -> dict:
-        data = {
-            "te": "pcdm",
-            "fid": friend_id,
-            "mid": message_id
-        }
-        self.send_data(data)
-        return self.get_data("pcdm")
+        response = requests.get(f"{self.webApi}privateConversation/{friend_id}/deleteMessage?token={self.access_token}&messageId={message_id}").json()
+        return response
 
     def global_conversation_join(self) -> dict:
         data = {
@@ -217,20 +185,13 @@ class Client(SocketHandler):
         }
         self.send_data(data)
 
-    def get_posts_list(self) -> dict:
-        data = {
-            "te": "pgl"
-        }
-        self.send_data(data)
-        return self.get_data("pgl")
+    def get_posts_list(self, author: str) -> dict:
+        response = requests.get(f"{self.webApi}posts/getList?token={self.access_token}&author={author}").json()
+        return response
 
     def get_post_info(self, post_id: str) -> dict:
-        data = {
-            "te": "pgi",
-            "pid": post_id
-        }
-        self.send_data(data)
-        return self.get_data("pgi")
+        response = requests.get(f"{self.webApi}posts/{post_id}/get?token={self.access_token}").json()
+        return response
 
     def room_send_message(self, message: str) -> None:
         data = {
@@ -317,13 +278,8 @@ class Client(SocketHandler):
         return self.get_data("adb")
 
     def post_set_reaction(self, post_id: str, reaction_type: int = 1):
-        data = {
-            "te": "psr",
-            "pid": post_id,
-            "t": reaction_type
-        }
-        self.send_data(data)
-        return self.get_data("psr")
+        response = requests.get(f"{self.webApi}posts/{post_id}/setReaction?token={self.access_token}&reactionType={reactionType}").json()
+        return response
 
     def post_get_comments(self, post_id: str):
         data = {
@@ -389,12 +345,8 @@ class Client(SocketHandler):
         return self.send_data("cn")
 
     def change_about(self, about: str) -> dict:
-        data = {
-            "te": "ca",
-            "a": about
-        }
-        self.send_data(data)
-        return self.send_data("ca")
+        response = requests.get(f"{self.webApi}user/changeAbout?token={self.access_token}&about={about}").json()
+        return response
 
     def change_confidentiality(self, type: str) -> dict:
         data = {

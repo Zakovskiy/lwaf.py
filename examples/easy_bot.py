@@ -1,6 +1,7 @@
 from lwaf import Client
 
-lwaf = Client("nickname", "password")
+lwaf = Client()
+lwaf.login_by_nickname("nickname", "password")
 lwaf.global_conversation_join()
 
 @lwaf.event(type="gcnm")
